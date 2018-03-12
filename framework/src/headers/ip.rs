@@ -4,14 +4,14 @@ use headers::MacHeader;
 use std::convert::From;
 use std::default::Default;
 use std::fmt;
-use std::net::Ipv4Addr;
+use std::net::{Ipv4Addr,Ipv6Addr};
 use std::slice;
 use utils::Flow;
 
 /// IP header using SSE
 #[derive(Default)]
 #[repr(C, packed)]
-pub struct IpHeader {
+pub struct Ipv4Header {
     version_to_len: u32,
     id_to_foffset: u32,
     ttl_to_csum: u32,
@@ -19,7 +19,23 @@ pub struct IpHeader {
     dst_ip: u32,
 }
 
-impl fmt::Display for IpHeader {
+#[derive(Default)]
+#[repr(C, packed)]
+pub struct Ipv6Header {
+    version_to_flow_label: u32,
+    payload_len: u16,
+    next_header: u8,
+    hop_limit: u8,
+    src_ip: u128,
+    dst_ip: u128,
+}
+
+pub enum IpHeader {
+    V4(Ipv4Header),
+    V6(Ipv6Header)
+}
+
+impl fmt::Display for Ipv4Header {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let src = Ipv4Addr::from(self.src());
         let dst = Ipv4Addr::from(self.dst());
@@ -66,7 +82,7 @@ impl EndOffset for IpHeader {
     }
 }
 
-impl IpHeader {
+impl Ipv4Header {
     #[inline]
     pub fn flow(&self) -> Option<Flow> {
         let protocol = self.protocol();
@@ -93,7 +109,7 @@ impl IpHeader {
     }
 
     #[inline]
-    pub fn new() -> IpHeader {
+    pub fn new() -> Ipv4Header {
         Default::default()
     }
 
