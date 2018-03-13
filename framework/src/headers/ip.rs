@@ -4,7 +4,7 @@ use headers::MacHeader;
 use std::convert::From;
 use std::default::Default;
 use std::fmt;
-use std::net::{Ipv4Addr,Ipv6Addr};
+use std::net::{Ipv4Addr};
 use std::slice;
 use utils::Flow;
 
@@ -30,10 +30,7 @@ pub struct Ipv6Header {
     dst_ip: u128,
 }
 
-pub enum IpHeader {
-    V4(Ipv4Header),
-    V6(Ipv6Header)
-}
+
 
 impl fmt::Display for Ipv4Header {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -54,7 +51,7 @@ impl fmt::Display for Ipv4Header {
     }
 }
 
-impl EndOffset for IpHeader {
+impl EndOffset for Ipv4Header {
     type PreviousHeader = MacHeader;
     #[inline]
     fn offset(&self) -> usize {
@@ -78,9 +75,38 @@ impl EndOffset for IpHeader {
 
     #[inline]
     fn check_correct(&self, _prev: &MacHeader) -> bool {
+        // prev.etype() == 0x0800
         true
     }
 }
+
+impl EndOffset for Ipv6Header {
+    type PreviousHeader = MacHeader;
+
+    #[inline]
+    fn offset(&self) -> usize {
+        // IPv6 Header is always 40 bytes: (4 + 8 + 20 + 16 + 8 + 8 + 128 + 128) / 8 = 40
+        40
+    }
+
+    #[inline]
+    fn size() -> usize {
+        // Struct is always 40 bytes as well
+        40
+    }
+
+    #[inline]
+    fn payload_size(&self, _: usize) -> usize {
+        u16::from_be(self.payload_len) as usize
+    }
+
+    #[inline]
+    fn check_correct(&self, _prev: &MacHeader) -> bool {
+        // prev.etype() == 0x86DD
+        true
+    }
+}
+
 
 impl Ipv4Header {
     #[inline]
@@ -90,7 +116,7 @@ impl Ipv4Header {
         let dst_ip = self.dst();
         if (protocol == 6 || protocol == 17) && self.payload_size(0) >= 4 {
             unsafe {
-                let self_as_u8 = (self as *const IpHeader) as *const u8;
+                let self_as_u8 = (self as *const Ipv4Header) as *const u8;
                 let port_as_u8 = self_as_u8.offset(self.offset() as isize);
                 let port_slice = slice::from_raw_parts(port_as_u8, 4);
                 let dst_port = BigEndian::read_u16(&port_slice[..2]);

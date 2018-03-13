@@ -1,5 +1,5 @@
 use super::EndOffset;
-use headers::IpHeader;
+use headers::Ipv4Header;
 use std::default::Default;
 use std::fmt;
 
@@ -63,7 +63,7 @@ impl fmt::Display for TcpHeader {
 }
 
 impl EndOffset for TcpHeader {
-    type PreviousHeader = IpHeader;
+    type PreviousHeader = Ipv4Header;
 
     #[inline]
     fn offset(&self) -> usize {
@@ -81,7 +81,7 @@ impl EndOffset for TcpHeader {
     }
 
     #[inline]
-    fn check_correct(&self, _prev: &IpHeader) -> bool {
+    fn check_correct(&self, _prev: &Ipv4Header) -> bool {
         true
     }
 }
