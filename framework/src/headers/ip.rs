@@ -30,7 +30,10 @@ pub struct Ipv6Header {
     dst_ip: u128,
 }
 
-
+pub enum IpHeader {
+    V4(Ipv4Header),
+    V6(Ipv6Header)
+}
 
 impl fmt::Display for Ipv4Header {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -48,6 +51,40 @@ impl fmt::Display for Ipv4Header {
             self.protocol(),
             self.csum()
         )
+    }
+}
+
+impl EndOffset for IpHeader {
+    type PreviousHeader = MacHeader;
+
+    #[inline]
+    fn offset(&self) -> usize {
+        match self {
+            &IpHeader::V4(ref v4) => v4.offset(),
+            &IpHeader::V6(ref v6) => v6.offset()
+        }
+    }
+
+    #[inline]
+    fn size() -> usize {
+        // Do we use the size of the V6 header?
+        40
+    }
+
+    #[inline]
+    fn payload_size(&self, hint: usize) -> usize {
+        match self {
+            &IpHeader::V4(ref v4) => v4.payload_size(hint),
+            &IpHeader::V6(ref v6) => v6.payload_size(hint)
+        }
+    }
+
+    #[inline]
+    fn check_correct(&self, prev: &MacHeader) -> bool {
+        match self {
+            &IpHeader::V4(ref v4) => v4.check_correct(prev),
+            &IpHeader::V6(ref v6) => v6.check_correct(prev)
+        }
     }
 }
 
